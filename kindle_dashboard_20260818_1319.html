@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kindle Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: "SimSun", "宋体", "Microsoft YaHei", sans-serif;
+            background: #ffffff; color: #000000; padding: 15px; font-size: 18px;
+        }
+        .header {
+            text-align: center; font-size: 22px; font-weight: bold;
+            margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #000;
+        }
+        .card {
+            border: 2px solid #000; margin-bottom: 15px; padding: 15px; background: #fff;
+        }
+        .card-title {
+            font-size: 16px; font-weight: bold; margin-bottom: 8px;
+            color: #333; border-bottom: 1px dashed #ccc; padding-bottom: 5px;
+        }
+        .time-main { font-size: 42px; font-weight: bold; text-align: center; letter-spacing: 2px; }
+        .time-date { text-align: center; font-size: 16px; margin-top: 5px; color: #333; }
+        .weather-row { display: flex; justify-content: space-between; align-items: center; }
+        .weather-temp { font-size: 36px; font-weight: bold; }
+        .weather-desc { font-size: 18px; }
+        .weather-detail { font-size: 14px; color: #666; margin-top: 5px; }
+        .hot-list { list-style: none; }
+        .hot-item {
+            display: flex; align-items: baseline; padding: 8px 0;
+            border-bottom: 1px dashed #ccc; font-size: 16px; line-height: 1.4;
+        }
+        .hot-item:last-child { border-bottom: none; }
+        .hot-rank { display: inline-block; width: 24px; font-weight: bold; color: #333; flex-shrink: 0; }
+        .hot-rank.top3 { color: #c00; }
+        .hot-word { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .hot-score { font-size: 12px; color: #999; margin-left: 8px; flex-shrink: 0; }
+        .error { text-align: center; padding: 20px; color: #999; font-size: 14px; }
+        .update-time { text-align: center; font-size: 14px; color: #999; margin-top: 15px; }
+    </style>
+</head>
+<body>
+    <div class="header">📊 Kindle 状态面板</div>
+    
+    <div class="card">
+        <div class="card-title">⏰ 时间</div>
+        <div class="time-main">13:19</div>
+        <div class="time-date">2026年08月18日 星期2</div>
+    </div>
+    
+    <div class="card">
+        <div class="card-title">🌤️ 天气 (宁德)</div>
+        <div class="weather-row">
+            <div class="weather-temp">29°C</div>
+            <div class="weather-desc">阵雨</div>
+        </div>
+        <div class="weather-detail">体感 33°C | 湿度 65% | 风速 11 km/h</div>
+    </div>
+    
+    <div class="card">
+        <div class="card-title">📰 科技新闻 (Hacker News)</div>
+        <ul class="hot-list">
+            
+        <li class="hot-item">
+            <span class="hot-rank top3">1</span>
+            <span class="hot-word">A Preview of DuckDB v2.0</span>
+            <span class="hot-score">582分</span>
+        </li>
+        <li class="hot-item">
+            <span class="hot-rank top3">2</span>
+            <span class="hot-word">How Bluesky draws its logo on screenshots</span>
+            <span class="hot-score">348分</span>
+        </li>
+        <li class="hot-item">
+            <span class="hot-rank top3">3</span>
+            <span class="hot-word">AI-Generated GitHub Copilot “Autofix” Allowed Comp</span>
+            <span class="hot-score">340分</span>
+        </li>
+        <li class="hot-item">
+            <span class="hot-rank ">4</span>
+            <span class="hot-word">GPT-5.6 Sol Pricing Cut by 50%</span>
+            <span class="hot-score">274分</span>
+        </li>
+        <li class="hot-item">
+            <span class="hot-rank ">5</span>
+            <span class="hot-word">Quake Shareware, a CD-ROM just a little too full</span>
+            <span class="hot-score">232分</span>
+        </li>
+        <li class="hot-item">
+            <span class="hot-rank ">6</span>
+            <span class="hot-word">GPU Offload in Rust: Portable, Safe, and Fast</span>
+            <span class="hot-score">182分</span>
+        </li>
+        <li class="hot-item">
+            <span class="hot-rank ">7</span>
+            <span class="hot-word">Fairphone 6 and PostmarketOS working main camera</span>
+            <span class="hot-score">119分</span>
+        </li>
+        <li class="hot-item">
+            <span class="hot-rank ">8</span>
+            <span class="hot-word">Wellington second-hand bookstore's mysterious orde</span>
+            <span class="hot-score">36分</span>
+        </li>
+        </ul>
+    </div>
+    
+    <div class="update-time">更新时间: 2026-08-18 13:19:40</div>
+</body>
+</html>
