@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kindle Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: "SimSun", "宋体", "Microsoft YaHei", sans-serif;
+            background: #ffffff; color: #000000; padding: 15px; font-size: 18px;
+        }
+        .header {
+            text-align: center; font-size: 22px; font-weight: bold;
+            margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #000;
+        }
+        .card {
+            border: 2px solid #000; margin-bottom: 15px; padding: 15px; background: #fff;
+        }
+        .card-title {
+            font-size: 16px; font-weight: bold; margin-bottom: 8px;
+            color: #333; border-bottom: 1px dashed #ccc; padding-bottom: 5px;
+        }
+        .time-main { font-size: 42px; font-weight: bold; text-align: center; letter-spacing: 2px; }
+        .time-date { text-align: center; font-size: 16px; margin-top: 5px; color: #333; }
+        .weather-row { display: flex; justify-content: space-between; align-items: center; }
+        .weather-temp { font-size: 36px; font-weight: bold; }
+        .weather-desc { font-size: 18px; }
+        .weather-detail { font-size: 14px; color: #666; margin-top: 5px; }
+        
+        /* 热搜样式 */
+        .hot-list { list-style: none; }
+        .hot-item {
+            display: flex; align-items: baseline; padding: 8px 0;
+            border-bottom: 1px dashed #ccc; font-size: 16px; line-height: 1.4;
+        }
+        .hot-item:last-child { border-bottom: none; }
+        .hot-rank { display: inline-block; width: 24px; font-weight: bold; color: #333; flex-shrink: 0; }
+        .hot-rank.top3 { color: #c00; }
+        .hot-word { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .hot-score { font-size: 12px; color: #999; margin-left: 8px; flex-shrink: 0; }
+        .loading { text-align: center; padding: 20px; color: #999; font-size: 14px; }
+        .error { text-align: center; padding: 20px; color: #999; font-size: 14px; }
+        
+        .bottom-hint {
+            text-align: center; font-size: 14px; color: #999;
+            margin-top: 15px; padding-top: 10px; border-top: 1px dashed #ccc;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">📊 Kindle 状态面板</div>
+    
+    <!-- 时间 -->
+    <div class="card">
+        <div class="card-title">⏰ 时间</div>
+        <div class="time-main" id="time">--:--</div>
+        <div class="time-date" id="date">----年--月--日</div>
+    </div>
+    
+    <!-- 天气 -->
+    <div class="card">
+        <div class="card-title">🌤️ 天气 (宁德)</div>
+        <div class="weather-row">
+            <div class="weather-temp" id="temp">--°C</div>
+            <div class="weather-desc" id="desc">加载中...</div>
+        </div>
+        <div class="weather-detail" id="detail"></div>
+    </div>
+    
+    <!-- 科技新闻 -->
+    <div class="card">
+        <div class="card-title">📰 科技新闻 (Hacker News)</div>
+        <ul class="hot-list" id="news-list">
+            <li class="loading">正在加载新闻...</li>
+        </ul>
+    </div>
+    
+    <div class="bottom-hint">点击屏幕刷新 | 每30分钟自动更新</div>
+    
+    <script>
+        function updateTime() {
+            const now = new Date();
+            const h = String(now.getHours()).padStart(2, '0');
+            const m = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('time').textContent = `${h}:${m}`;
+            const y = now.getFullYear();
+            const mo = String(now.getMonth() + 1).padStart(2, '0');
+            const d = String(now.getDate()).padStart(2, '0');
+            document.getElementById('date').textContent = `${y}年${mo}月${d}日`;
+        }
+        
+        async function fetchWeather() {
+            try {
+                // wttr.in 支持 CORS，固定使用宁德
+                const resp = await fetch('https://wttr.in/ningde?format=j1');
+                const data = await resp.json();
+                const cc = data.current_condition[0];
+                
+                // WMO 代码转中文
+                const weatherMap = {
+                    '113': '晴朗', '116': '多云', '119': '阴天',
+                    '122': '阴天', '143': '雾', '176': '阵雨',
+                    '179': '小阵雨', '182': '小冰雹', '185': '小冰雹',
+                    '200': '雷雨', '227': '雪', '230': '大雪',
+                    '260': '冻雨', '263': '毛毛雨', '266': '毛毛雨',
+                    '281': '冻雨', '284': '冻雨', '293': '小雨',
+                    '296': '小雨', '299': '中雨', '302': '中雨',
+                    '305': '大雨', '308': '大雨', '311': '小冰雹',
+                    '314': '中冰雹', '317': '大冰雹', '320': '小雪',
+                    '323': '中雪', '326': '大雪', '329': '小阵雪',
+                    '332': '中阵雪', '335': '大阵雪', '338': '大雪',
+                    '350': '冰粒', '353': '小雨', '356': '中雨',
+                    '359': '大雨', '362': '小冰雹', '365': '小冰雹',
+                    '368': '小阵雪', '371': '大阵雪', '374': '冰雹',
+                    '377': '冰粒', '386': '雷雨有雨', '389': '雷雨有雪',
+                    '392': '雷雨', '395': '雷雨有雪'
+                };
+                const code = cc.weatherCode;
+                const desc = weatherMap[code] || '多云';
+                
+                document.getElementById('temp').textContent = `${cc.temp_C}°C`;
+                document.getElementById('desc').textContent = desc;
+                document.getElementById('detail').textContent = `湿度 ${cc.humidity}% | 风速 ${cc.windspeedKmph} km/h`;
+            } catch (e) {
+                document.getElementById('desc').textContent = '获取失败';
+                document.getElementById('detail').textContent = '请检查网络连接';
+            }
+        }
+        
+        async function fetchNews() {
+            const list = document.getElementById('news-list');
+            try {
+                // Hacker News 支持 CORS，获取 Top Stories
+                const resp = await fetch('https://hacker-news.firebaseio.com/v0/topstories.json');
+                const ids = await resp.json();
+                
+                // 获取前10条的详细信息
+                const stories = [];
+                const batchSize = 10;
+                
+                // 并行获取前10条
+                const promises = ids.slice(0, batchSize).map(id => 
+                    fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`)
+                        .then(r => r.json())
+                );
+                
+                const results = await Promise.all(promises);
+                stories.push(...results.filter(s => s && s.title));
+                
+                if (stories.length === 0) {
+                    throw new Error('No stories');
+                }
+                
+                // 清空列表
+                list.innerHTML = '';
+                
+                // 按分数排序
+                stories.sort((a, b) => (b.score || 0) - (a.score || 0));
+                
+                // 显示前8条
+                const displayItems = stories.slice(0, 8);
+                displayItems.forEach((story, idx) => {
+                    const rank = idx + 1;
+                    const rankClass = rank <= 3 ? ' top3' : '';
+                    const score = story.score || 0;
+                    const comments = story.descendants || 0;
+                    
+                    // 创建列表项
+                    const li = document.createElement('li');
+                    li.className = 'hot-item';
+                    
+                    const rankSpan = document.createElement('span');
+                    rankSpan.className = 'hot-rank' + rankClass;
+                    rankSpan.textContent = rank;
+                    
+                    const wordSpan = document.createElement('span');
+                    wordSpan.className = 'hot-word';
+                    // 截断长标题
+                    let title = story.title || 'Untitled';
+                    if (title.length > 40) title = title.substring(0, 37) + '...';
+                    wordSpan.textContent = title;
+                    
+                    const scoreSpan = document.createElement('span');
+                    scoreSpan.className = 'hot-score';
+                    scoreSpan.textContent = `${score}分`;
+                    
+                    li.appendChild(rankSpan);
+                    li.appendChild(wordSpan);
+                    li.appendChild(scoreSpan);
+                    list.appendChild(li);
+                });
+                
+            } catch (e) {
+                list.innerHTML = '';
+                const errLi = document.createElement('li');
+                errLi.className = 'error';
+                errLi.textContent = '新闻加载失败，点击重试';
+                list.appendChild(errLi);
+            }
+        }
+        
+        // 初始化
+        updateTime();
+        fetchWeather();
+        fetchNews();
+        
+        // 每分钟更新时钟
+        setInterval(updateTime, 60000);
+        
+        // 每30分钟更新天气和新闻
+        setInterval(() => {
+            fetchWeather();
+            fetchNews();
+        }, 30 * 60 * 1000);
+        
+        // 点击刷新
+        document.addEventListener('click', () => {
+            fetchWeather();
+            fetchNews();
+        });
+    </script>
+</body>
+</html>
