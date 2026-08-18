@@ -7,14 +7,20 @@
 import json
 import urllib.request
 import ssl
-from datetime import datetime
 import sys
 import os
+from datetime import datetime
 
 # 配置
 WEATHER_CITY = "ningde"
-TIMEZONE = "Asia/Shanghai"
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36"
+
+def get_secure_context():
+    """创建安全的 SSL 上下文（开发环境使用）"""
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    return ctx
 
 def fetch_weather():
     """获取天气数据"""
@@ -24,9 +30,7 @@ def fetch_weather():
             'User-Agent': USER_AGENT,
             'Accept': 'application/json'
         })
-        ctx = ssl.create_default_context()
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
+        ctx = get_secure_context()
         
         with urllib.request.urlopen(req, timeout=15, context=ctx) as resp:
             data = json.loads(resp.read().decode('utf-8'))
@@ -65,51 +69,45 @@ def fetch_weather():
         print(f"天气获取失败: {e}")
         return {'temp': '--', 'desc': '获取失败', 'humidity': '--', 'wind': '--', 'feels_like': '--'}
 
-def fetch_news(count=10):
-    """获取 Hacker News 热榜"""
+def fetch_hot_search():
+    """获取百度热搜"""
     try:
-        url = "https://hacker-news.firebaseio.com/v0/topstories.json"
-        req = urllib.request.Request(url, headers={'User-Agent': USER_AGENT})
-        ctx = ssl.create_default_context()
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
+        url = "https://top.baidu.com/api/board?platform=wiseapp"
+        req = urllib.request.Request(url, headers={
+            'User-Agent': USER_AGENT,
+            'Accept': 'application/json'
+        })
+        ctx = get_secure_context()
         
         with urllib.request.urlopen(req, timeout=15, context=ctx) as resp:
-            ids = json.loads(resp.read().decode('utf-8'))
+            data = json.loads(resp.read().decode('utf-8'))
             
-            stories = []
-            for sid in ids[:count]:
-                try:
-                    item_url = f"https://hacker-news.firebaseio.com/v0/item/{sid}.json"
-                    req = urllib.request.Request(item_url, headers={'User-Agent': USER_AGENT})
-                    
-                    with urllib.request.urlopen(req, timeout=10, context=ctx) as item_resp:
-                        story = json.loads(item_resp.read().decode('utf-8'))
-                        if story and 'title' in story:
-                            stories.append({
-                                'title': story.get('title', 'Untitled')[:50],
-                                'score': story.get('score', 0),
-                                'comments': story.get('descendants', 0),
-                                'url': story.get('url', '#')
-                            })
-                except:
-                    continue
-            
-            # 按分数排序
-            stories.sort(key=lambda x: x['score'], reverse=True)
-            return stories[:8]
+            if data.get('success') and data.get('data', {}).get('cards'):
+                items = data['data']['cards'][0]['content'][:10]
+                news = []
+                for item in items:
+                    score = int(item.get('hotScore', 0))
+                    score_str = f"{score//10000}万" if score >= 10000 else str(score)
+                    news.append({
+                        'title': item.get('word', ''),
+                        'score': score_str
+                    })
+                return news
+            else:
+                raise Exception('No data')
     except Exception as e:
-        print(f"新闻获取失败: {e}")
+        print(f"热搜获取失败: {e}")
         return []
 
 def generate_html(weather, news):
     """生成静态 HTML"""
+    # 使用本地时间
     now = datetime.now()
     date_str = now.strftime("%Y年%m月%d日 星期%w")
     time_str = now.strftime("%H:%M")
     update_time = now.strftime("%Y-%m-%d %H:%M:%S")
     
-    # 生成新闻列表 HTML
+    # 生成热搜列表 HTML
     news_items = ""
     for i, item in enumerate(news, 1):
         rank_class = "top3" if i <= 3 else ""
@@ -117,11 +115,11 @@ def generate_html(weather, news):
         <li class="hot-item">
             <span class="hot-rank {rank_class}">{i}</span>
             <span class="hot-word">{item['title']}</span>
-            <span class="hot-score">{item['score']}分</span>
+            <span class="hot-score">{item['score']}</span>
         </li>'''
     
     if not news_items:
-        news_items = '<li class="error">新闻获取失败</li>'
+        news_items = '<li class="error">热搜获取失败</li>'
     
     html = f'''<!DOCTYPE html>
 <html lang="zh-CN">
@@ -185,7 +183,7 @@ def generate_html(weather, news):
     </div>
     
     <div class="card">
-        <div class="card-title">📰 科技新闻 (Hacker News)</div>
+        <div class="card-title">🔥 百度热搜 TOP10</div>
         <ul class="hot-list">
             {news_items}
         </ul>
@@ -218,9 +216,9 @@ def main():
     weather = fetch_weather()
     print(f"   温度: {weather['temp']}°C, {weather['desc']}")
     
-    print("📰 获取新闻...")
-    news = fetch_news(10)
-    print(f"   获取到 {len(news)} 条新闻")
+    print("🔥 获取热搜...")
+    news = fetch_hot_search()
+    print(f"   获取到 {len(news)} 条热搜")
     
     print("📝 生成 HTML...")
     html = generate_html(weather, news)
